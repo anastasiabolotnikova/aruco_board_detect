@@ -7,7 +7,7 @@
     <arg name="camera_image_topic"  default="/camera/color/image_raw" />
     <arg name="board_config_file"   default="$(find aruco_board_detect)/cfg/board_config.yaml" />
     <arg name="single_markers_config_file"         default="$(find aruco_board_detect)/cfg/single_markers_config.yaml" />
-    <arg name="detection_rate"      default="1.0" />
+    <arg name="detection_rate"      default="0.05" />
     <arg name="show_debug_img"      default="false" />
     <arg name="publish_single_markers" default="false" />
 

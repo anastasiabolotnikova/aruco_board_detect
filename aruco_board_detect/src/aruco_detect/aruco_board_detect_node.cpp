@@ -157,16 +157,16 @@ ArucoDetectNode::ArucoDetectNode(ros::NodeHandle& nh) : nh_(nh), time_between_ca
 
     // Publish output images
 
-    output_image_pub_ = it_.advertise("debug_image", 1);
+    output_image_pub_ = it_.advertise("debug_image", 10);
 
     cam_params_ = std::unique_ptr<CameraParameters>(new CameraParameters());
 
     cam_info_sub_ = nh_.subscribe("input/camera_info", 1, &ArucoDetectNode::cameraParamsAcquisitionCallback, this);
 
-    board_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("board_pose", 1);
+    board_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("board_pose", 10);
 
     if (detect_single_markers_)
-        markers_data_pub_ = nh_.advertise<aruco_board_detect::MarkerList>("markers_data", 1);
+        markers_data_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("markers_data", 10);
 
     // Set up the timer
 
@@ -406,15 +406,19 @@ void ArucoDetectNode::boardDetectionTimedCallback(const ros::TimerEvent&)
                                         markers_rot, markers_pos);
 
                 // Prepare the marker list array message including every detected marker
-
-                aruco_board_detect::MarkerListPtr marker_list_msg(new aruco_board_detect::MarkerList);
-
-                marker_list_msg->header.frame_id = cam_params_->getCameraFrameId();
-                marker_list_msg->header.stamp = ros::Time::now();
-                marker_list_msg->marker_dictionary.data = board_description_.dict_type_;
+                visualization_msgs::MarkerArrayPtr marker_list_msg(new visualization_msgs::MarkerArray);
 
                 for (int idx=0; idx < markers_rot.size(); idx++)
                 {
+
+                    visualization_msgs::Marker m;
+                    m.header.frame_id = cam_params_->getCameraFrameId();
+                    m.header.stamp = ros::Time::now();
+                    m.ns = "aruco";
+                    m.id = single_marker_ids[idx];
+                    m.type = visualization_msgs::Marker::SPHERE;
+                    m.action = visualization_msgs::Marker::ADD;
+
                     // Rotation axis to rotation matrix
 
                     cv::Mat rot_mat_marker(3, 3, cv::DataType<float>::type);
@@ -439,11 +443,18 @@ void ArucoDetectNode::boardDetectionTimedCallback(const ros::TimerEvent&)
                     marker_pose.position.x = markers_pos[idx][0];
                     marker_pose.position.y = markers_pos[idx][1];
                     marker_pose.position.z = markers_pos[idx][2];
-                    marker_list_msg->marker_poses.push_back(marker_pose);
 
-                    std_msgs::Int16 marker_id;
-                    marker_id.data = single_marker_ids[idx];
-                    marker_list_msg->marker_ids.push_back(marker_id);
+                    m.pose = marker_pose;
+                    m.scale.x = 1.0;
+                    m.scale.y = 1.0;
+                    m.scale.z = 1.0;
+                    m.color.r = 0.0;
+                    m.color.g = 0.0;
+                    m.color.b = 1.0;
+                    m.color.a = 1.0;
+                    m.lifetime = ros::Duration(0.05);
+
+                    marker_list_msg->markers.push_back(m);
 
                     // Draw the single markers and axes
 
